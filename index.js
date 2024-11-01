@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "https://chess-frontend-neon.vercel.app/", // React app URL
+        origin: "*", // Allows requests from any origin
         methods: ["GET", "POST"]
     }
 });
