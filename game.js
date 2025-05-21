@@ -41,12 +41,17 @@ const addPlayer = ({ gameID, name, playerID }) => {
 const game = (id) => games[id];
 
 const removePlayer = (playerID) => {
-    for (const game in games) {
-        let players = games[game];
+    for (const gameID in games) { // Renamed 'game' to 'gameID' for clarity
+        let players = games[gameID];
         const index = players.findIndex((pl) => pl.playerID === playerID);
 
         if (index !== -1) {
-            return players.splice(index, 1)[0];
+            const removedPlayer = players.splice(index, 1)[0];
+            if (players.length === 0) {
+                delete games[gameID];
+                console.log(`Game room ${gameID} was empty and has been deleted.`); // Optional: for logging
+            }
+            return removedPlayer;
         }
     }
 };
