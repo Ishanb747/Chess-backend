@@ -48,11 +48,33 @@ io.on('connection', (socket) => {
             });
 
             // Check if there are enough players to start the game
-            if (game(gameID).length >= 2) {
-                const white = game(gameID).find((player) => player.color === 'w');
-                io.to(gameID).emit('message', {
-                    message: `Let's start the game. White (${white.name}) goes first`,
-                });
+            const currentGame = game(gameID); // Get the game state once
+
+            if (currentGame && currentGame.length >= 2) { // Check if currentGame exists and then check its length
+                const white = currentGame.find((player) => player.color === 'w');
+                // Ensure white player is found before accessing white.name, though this is less likely to be an issue if length is >= 2
+                if (white) { 
+                    io.to(gameID).emit('message', {
+                        message: `Let's start the game. White (${white.name}) goes first`,
+                    });
+                } else {
+                    // Optional: Handle case where white player isn't found, though theoretically,
+                    // if currentGame.length >= 2, one player must be white.
+                    // This could indicate another issue if reached.
+                    console.error(`Error: White player not found in game ${gameID} even though player count is ${currentGame.length}`);
+                }
+            } else if (currentGame && currentGame.length < 2) {
+                // Optional: Handle the case where the game exists but doesn't have enough players yet.
+                // This part of the logic might already be handled by client-side or other server messages.
+                // For now, just ensuring no error occurs is the priority.
+                console.log(`Game ${gameID} has ${currentGame.length} player(s), waiting for more.`);
+            } else if (!currentGame) {
+                // This case should ideally be handled earlier, perhaps when `addPlayer` is called,
+                // or the client should not be able to send a `join` event for a non-existent game
+                // after an initial failed join. However, adding a safeguard here is good.
+                console.error(`Error: Game with ID ${gameID} not found when checking to start the game.`);
+                // Optionally, inform the client:
+                // socket.emit('error', { message: `Game ${gameID} not found.` });
             }
         } catch (error) {
             console.error('Error in join event:', error); // Log the error for debugging
@@ -68,10 +90,10 @@ io.on('connection', (socket) => {
         const player = removePlayer(socket.id);
 
         if (player) {
-            io.to(player.game).emit('message', {
+            io.to(player.gameID).emit('message', {
                 message: `${player.name} has left the game.`,
             });
-            socket.broadcast.to(player.game).emit('opponentLeft');
+            socket.broadcast.to(player.gameID).emit('opponentLeft');
         }
     });
 });
